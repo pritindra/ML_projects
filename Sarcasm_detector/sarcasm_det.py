@@ -38,6 +38,54 @@ def model_def():
     model = tf.keras.models.Model(inputs=inputs,outputs=layer)
     return model
 
+model = model_def()
+model.summary()
+opt = tf.keras.optimizers.Adam(learning_rate=0.01)
+model.compile(loss="binary_crossentropy", optimizer=opt, metrics=["accuracy"])
+
+es = tf.keras.callbacks.EarlyStopping(
+    monitor='val_acc', 
+    mode='max',
+    patience=6
+)
+
+model.fit(seqs_mat,Y_train,batch_size=100,epochs=5,validation_split=0.1,callbacks=[es])
+
+max_len = 150
+def predict_sarcasm(user_seq):
+#     prediction
+    prob = model.predict(user_seq)
+    probability = np.mean(prob, axis=0)
+
+    if probability > 0.5:
+        return("Sarcastic")
+    elif probability < 0.5:
+        return("Not Sarcastic")
+    elif probability == 0.5:
+        return("Neutral")
+
+def user_text_processing(user_text):
+    user_text = user_text.split()
+    user_text = [word.lower() for word in user_text if word not in stopwords]
+    user_text
+    user_seq = np.array(user_text)
+    user_seq = tk.texts_to_sequences(user_seq)
+    user_seq = tf.keras.preprocessing.sequence.pad_sequences(user_seq,maxlen=max_len)
+
+    return user_seq
+
+
+test_sequences = tk.texts_to_sequences(X_test)
+test_sequences_matrix = tf.keras.preprocessing.sequence.pad_sequences(test_sequences,maxlen=max_len)
+
+accr = model.evaluate(test_sequences_matrix,Y_test)
+print('Test set\n  Loss: {:0.3f}\n  Accuracy: {:0.3f}'.format(accr[0],accr[1]))
+
+user_text = 'state population to double by 2040, babies to blame'
+user_seq = user_text_processing(user_text)
+user_seq
+prediction = predict_sarcasm(user_seq)
+print(f"Sentence '{user_text}' is of '{prediction}' nature")
 
 
 
